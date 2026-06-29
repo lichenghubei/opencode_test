@@ -1,0 +1,27 @@
+{
+  "name": "Thunder Strike",
+  "short_name": "Thunder",
+  "description": "星球大战风格射击游戏",
+  "start_url": "/thunder-strike.html",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#050510",
+  "theme_color": "#050510",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23050510' width='192' height='192'/><path fill='%2300ffff' d='M96 20 L140 80 L140 150 L96 120 L52 150 L52 80 Z'/><path fill='%23ff3300' d='M70 100 L52 160 L80 140 Z M122 100 L140 160 L112 140 Z'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%23050510' width='512' height='512'/><path fill='%2300ffff' d='M256 50 L370 210 L370 400 L256 320 L142 400 L142 210 Z'/><path fill='%23ff3300' d='M180 260 L142 430 L210 370 Z M332 260 L370 430 L302 370 Z'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["games", "entertainment"],
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
+}
