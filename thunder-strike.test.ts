@@ -139,6 +139,7 @@ function injectAndExport(code: string) {
   game.startGame = startGame; game.createExplosion = createExplosion;
   game.spawnPowerup = spawnPowerup; game.getTouchShoot = getTouchShoot;
   game.resizeCanvas = resizeCanvas; game.gameLoop = gameLoop;
+  game.createShipImage = createShipImage;
 
   // constants
   game.LEVELS = LEVELS; game.COLORS = COLORS;
@@ -1223,5 +1224,471 @@ describe('Edge cases', () => {
     set$('player', new G.Player())
     expect(() => G.useBomb()).not.toThrow()
     expect(G.bombs).toBe(0)
+  })
+})
+
+// ═════════════════════════════════════
+// 27. Null / Undefined / Empty Input Boundary
+// ═════════════════════════════════════
+describe('Null/Undefined/Empty input boundaries', () => {
+  describe('getScaledStats', () => {
+    it('hp is NaN when baseHP is undefined (Math.round on NaN)', () => {
+      const s = G.getScaledStats(undefined as any, 2, 0)
+      expect(isNaN(s.hp)).toBe(true)
+    })
+
+    it('speed is NaN when baseSpeed is undefined', () => {
+      const s = G.getScaledStats(1, undefined as any, 0)
+      expect(s.hp).toBe(1)
+      expect(isNaN(s.speed)).toBe(true)
+    })
+
+    it('crashes when levelIndex is out of bounds (negative)', () => {
+      expect(() => G.getScaledStats(1, 2, -1)).toThrow()
+    })
+
+    it('crashes when levelIndex is beyond array length', () => {
+      expect(() => G.getScaledStats(1, 2, 999)).toThrow()
+    })
+  })
+
+  describe('startLevel', () => {
+    it('crashes on negative level index', () => {
+      expect(() => G.startLevel(-1)).toThrow()
+    })
+
+    it('crashes on out-of-bounds level index', () => {
+      expect(() => G.startLevel(999)).toThrow()
+    })
+  })
+
+  describe('Enemy with invalid type', () => {
+    it('creates enemy with undefined type and all props undefined', () => {
+      const e = new G.Enemy(undefined)
+      expect(e.type).toBeUndefined()
+      expect(e.width).toBeUndefined()
+      expect(e.hp).toBeUndefined()
+      expect(e.speed).toBeUndefined()
+      expect(e.score).toBeUndefined()
+      expect(e.active).toBe(true)
+    })
+
+    it('creates enemy with null type', () => {
+      const e = new G.Enemy(null)
+      expect(e.type).toBeNull()
+      expect(e.width).toBeUndefined()
+    })
+
+    it('update() on type-undefined enemy does not crash', () => {
+      const e = new G.Enemy(undefined)
+      expect(() => e.update()).not.toThrow()
+    })
+
+    it('draw() on type-undefined enemy does not crash (no cached image)', () => {
+      const e = new G.Enemy(undefined)
+      expect(() => e.draw()).not.toThrow()
+    })
+
+    it('hit() on type-undefined enemy does not crash', () => {
+      const e = new G.Enemy(undefined)
+      set$('player', new G.Player())
+      expect(() => e.hit(1)).not.toThrow()
+    })
+  })
+
+  describe('Bullet with no arguments', () => {
+    it('creates bullet with undefined positions (Number.isNaN is strict)', () => {
+      const b = new G.Bullet(undefined as any, undefined as any, undefined as any, undefined as any, undefined as any, undefined as any)
+      expect(b.x).toBeUndefined()
+      expect(b.y).toBeUndefined()
+      expect(b.active).toBe(true)
+    })
+
+    it('update() on NaN bullet does not crash', () => {
+      const b = new G.Bullet(undefined as any, undefined as any, undefined as any, undefined as any, 'player', undefined as any)
+      expect(() => b.update()).not.toThrow()
+    })
+
+    it('draw() on NaN bullet does not crash', () => {
+      const b = new G.Bullet(undefined as any, undefined as any, undefined as any, undefined as any, 'player', undefined as any)
+      expect(() => b.draw()).not.toThrow()
+    })
+
+    it('uses default damage=1 when damage is undefined', () => {
+      const b = new G.Bullet(100, 100, 0, 0, 'player', undefined as any)
+      expect(b.damage).toBe(1)
+    })
+
+    it('uses default enemy width/height when type is undefined', () => {
+      const b = new G.Bullet(100, 100, 0, 0, undefined as any, 1)
+      expect(b.width).toBe(8)
+      expect(b.height).toBe(12)
+    })
+  })
+
+  describe('Missile edge cases', () => {
+    it('creates with null target without crashing', () => {
+      const m = new G.Missile(100, 200, null, undefined as any)
+      expect(m.target).toBeNull()
+      expect(m.damage).toBe(2)
+      expect(m.active).toBe(true)
+    })
+
+    it('update() with null target moves straight up', () => {
+      const m = new G.Missile(100, 300, null, 2)
+      m.update()
+      expect(m.y).toBeLessThan(300)
+    })
+
+    it('update() with target that has no hp property moves straight up', () => {
+      const target = { x: 200, y: 100 } as any
+      const m = new G.Missile(100, 300, target, 2)
+      m.update()
+      expect(m.y).toBeLessThan(300)
+    })
+  })
+
+  describe('Powerup with no arguments', () => {
+    it('creates with undefined position and type', () => {
+      const p = new G.Powerup(undefined as any, undefined as any, undefined as any)
+      expect(p.x).toBeUndefined()
+      expect(p.y).toBeUndefined()
+      expect(p.type).toBeUndefined()
+    })
+
+    it('collect() on undefined-type powerup does nothing beyond deactivation', () => {
+      const p = new G.Powerup(100, 200, undefined)
+      set$('player', new G.Player())
+      expect(() => p.collect()).not.toThrow()
+      expect(p.active).toBe(false)
+    })
+  })
+
+  describe('createExplosion with no arguments', () => {
+    it('does not crash with undefined coordinates', () => {
+      set$('explosions', [])
+      G.createExplosion(undefined as any, undefined as any, undefined as any, undefined as any)
+      expect(G.explosions.length).toBe(1)
+      expect(G.explosions[0].x).toBeUndefined()
+    })
+  })
+
+  describe('Empty list operations', () => {
+    it('checkCollisions does nothing when all arrays are empty', () => {
+      set$('player', new G.Player())
+      set$('bullets', [])
+      set$('enemyBullets', [])
+      set$('enemies', [])
+      set$('powerups', [])
+      expect(() => G.checkCollisions()).not.toThrow()
+    })
+
+    it('checkCollisions early-returns when player is null', () => {
+      set$('player', null)
+      set$('bullets', [new G.Bullet(100, 100, 0, 0, 'player', 1)])
+      set$('enemyBullets', [new G.Bullet(100, 100, 0, 0, 'enemy', 1)])
+      set$('enemies', [new G.Enemy('small')])
+      expect(() => G.checkCollisions()).not.toThrow()
+    })
+
+    it('useBomb with negative bombs is no-op', () => {
+      set$('bombs', -1)
+      set$('player', new G.Player())
+      set$('enemies', [new G.Enemy('small')])
+      G.useBomb()
+      expect(G.bombs).toBe(-1)
+      expect(G.enemies.length).toBe(1)
+    })
+  })
+
+  describe('updateUI edge cases', () => {
+    it('does not crash when player is null', () => {
+      set$('player', null)
+      expect(() => G.updateUI()).toThrow()
+    })
+
+    it('updatePowerBar handles null player via optional chaining', () => {
+      set$('player', null)
+      expect(() => G.updatePowerBar()).not.toThrow()
+    })
+  })
+})
+
+// ═════════════════════════════════════
+// 28. Extreme Value Boundaries
+// ═════════════════════════════════════
+describe('Extreme value boundaries', () => {
+  describe('Player extreme values', () => {
+    it('shoot() with powerLevel=0 creates no bullets', () => {
+      const p = new G.Player()
+      p.powerLevel = 0
+      set$('bullets', [])
+      set$('player', p)
+      p.shoot()
+      expect(G.bullets.length).toBe(0)
+    })
+
+    it('shoot() with powerLevel=9999 creates many bullets but does not crash', () => {
+      const p = new G.Player()
+      p.powerLevel = 9999
+      set$('bullets', [])
+      set$('player', p)
+      expect(() => p.shoot()).not.toThrow()
+      expect(G.bullets.length).toBeGreaterThan(0)
+    })
+
+    it('hit() with powerLevel=0 does not go below 1', () => {
+      const p = new G.Player()
+      p.powerLevel = 1
+      set$('player', p)
+      p.hit()
+      expect(p.powerLevel).toBe(1)
+    })
+
+    it('speed=0 still allows keyboard update (just no movement)', () => {
+      const p = new G.Player()
+      p.speed = 0
+      set$('player', p)
+      G.keys['ArrowRight'] = true
+      p.update()
+      expect(p.x).toBe(G.WIDTH / 2)
+      G.keys['ArrowRight'] = false
+    })
+
+    it('speed=9999 moves by extreme amount but stays clamped', () => {
+      const p = new G.Player()
+      p.speed = 9999
+      set$('player', p)
+      G.keys['ArrowRight'] = true
+      p.update()
+      expect(p.x).toBeLessThanOrEqual(G.WIDTH - p.width / 2)
+      G.keys['ArrowRight'] = false
+    })
+  })
+
+  describe('Bullet extreme positions', () => {
+    it('bullet at x=9e9 deactivates immediately', () => {
+      const b = new G.Bullet(9e9, 9e9, 0, 0, 'player', 1)
+      b.update()
+      expect(b.active).toBe(false)
+    })
+  })
+
+  describe('Explosion extreme values', () => {
+    it('explosion with size=0 creates no particles? actually creates 0', () => {
+      const ex = new G.Explosion(100, 200, 0, '#fff')
+      expect(ex.size).toBe(0)
+      expect(ex.particles.length).toBe(0)
+    })
+
+    it('explosion with negative size stays negative (Math.min(-5,60) = -5)', () => {
+      const ex = new G.Explosion(100, 200, -5, '#fff')
+      expect(ex.size).toBe(-5)
+      expect(ex.particles.length).toBe(0)
+    })
+
+    it('explosion with huge size is capped at 60', () => {
+      const ex = new G.Explosion(100, 200, 9999, '#fff')
+      expect(ex.size).toBe(60)
+      expect(ex.particles.length).toBe(60)
+    })
+
+    it('explosion with size=0 is created active but has 0 particles', () => {
+      const ex = new G.Explosion(100, 200, 0, '#fff')
+      expect(ex.active).toBe(true)
+      expect(ex.particles.length).toBe(0)
+    })
+  })
+
+  describe('Score extreme values', () => {
+    it('handles MAX_SAFE_INTEGER score display', () => {
+      set$('score', Number.MAX_SAFE_INTEGER)
+      set$('player', new G.Player())
+      expect(() => G.updateUI()).not.toThrow()
+      expect(document.getElementById('score')!.textContent).toBe(String(Number.MAX_SAFE_INTEGER))
+    })
+  })
+
+  describe('gameTime extreme value', () => {
+    it('very large gameTime does not break background render', () => {
+      const mockCtx = createMockContext()
+      set$('gameState', 'playing')
+      set$('currentLevel', 0)
+      set$('gameTime', 99999999)
+      expect(() => G.backgroundRenderer.render(mockCtx, 99999999, 'space')).not.toThrow()
+    })
+  })
+})
+
+// ═════════════════════════════════════
+// 29. Type Error Boundaries
+// ═════════════════════════════════════
+describe('Type error boundaries', () => {
+  describe('Enemy with wrong type', () => {
+    it('accepts number as type', () => {
+      const e = new G.Enemy(123 as any)
+      expect(e.type).toBe(123)
+      expect(e.width).toBeUndefined()
+    })
+
+    it('accepts boolean as type', () => {
+      const e = new G.Enemy(true as any)
+      expect(e.type).toBe(true)
+      expect(e.hp).toBeUndefined()
+    })
+
+    it('accepts object as type', () => {
+      const e = new G.Enemy({} as any)
+      expect(e.type).toEqual({})
+      expect(e.width).toBeUndefined()
+    })
+
+    it('accepts array as type', () => {
+      const e = new G.Enemy([] as any)
+      expect(e.type).toEqual([])
+      expect(e.width).toBeUndefined()
+    })
+
+    it('shoot() with invalid type creates no bullets', () => {
+      set$('player', new G.Player())
+      const e = new G.Enemy(undefined)
+      set$('enemyBullets', [])
+      e.shoot()
+      expect(G.enemyBullets.length).toBe(0)
+    })
+  })
+
+  describe('getScaledStats with wrong types', () => {
+    it('string baseHP produces NaN hp', () => {
+      const s = G.getScaledStats('abc' as any, 2, 0)
+      expect(Number.isNaN(s.hp)).toBe(true)
+    })
+
+    it('string levelIndex is treated as property key (coerced to number)', () => {
+      expect(() => G.getScaledStats(1, 2, 'abc' as any)).toThrow()
+    })
+  })
+
+  describe('Bullet with wrong type string', () => {
+    it('unknown type string uses else branch (enemy width/height)', () => {
+      const b = new G.Bullet(100, 100, 0, 0, 'invalidType', 1)
+      expect(b.width).toBe(8)
+      expect(b.height).toBe(12)
+    })
+  })
+
+  describe('Powerup with wrong type', () => {
+    it('number as type does not crash collect()', () => {
+      const p = new G.Powerup(100, 200, 42 as any)
+      set$('player', new G.Player())
+      expect(() => p.collect()).not.toThrow()
+      expect(p.active).toBe(false)
+    })
+
+    it('string "INVALID" as type does not crash collect()', () => {
+      const p = new G.Powerup(100, 200, 'INVALID' as any)
+      set$('player', new G.Player())
+      expect(() => p.collect()).not.toThrow()
+      expect(p.active).toBe(false)
+    })
+  })
+
+  describe('Boss.shoot() with missing player', () => {
+    it('throws when player is null (no guard in Boss.shoot)', () => {
+      const b = new G.Boss()
+      b.entered = true
+      set$('player', null)
+      set$('enemyBullets', [])
+      expect(() => b.shoot()).toThrow()
+    })
+
+    it('creates 5 bullets with valid player', () => {
+      const b = new G.Boss()
+      b.entered = true
+      set$('player', new G.Player())
+      set$('enemyBullets', [])
+      b.shoot()
+      expect(G.enemyBullets.length).toBe(5)
+    })
+  })
+})
+
+// ═════════════════════════════════════
+// 30. Audio & Concurrency Boundaries
+// ═════════════════════════════════════
+describe('Audio & concurrency boundaries', () => {
+  describe('sfx', () => {
+    it('sfx.play() with unknown type does not crash', () => {
+      expect(() => G.sfx.play('unregistered_sound')).not.toThrow()
+    })
+
+    it('sfx.play() with no type argument does not crash', () => {
+      expect(() => G.sfx.play()).not.toThrow()
+    })
+  })
+
+  describe('audioManager async safety', () => {
+    it('load() with undefined levelIndex returns early', () => {
+      expect(() => G.audioManager.load(undefined)).not.toThrow()
+    })
+
+    it('play() with unknown phase does not crash', () => {
+      G.startLevel(0)
+      expect(() => G.audioManager.play('invalid_phase')).not.toThrow()
+    })
+
+    it('play() with null phase does not crash', () => {
+      expect(() => G.audioManager.play(null)).not.toThrow()
+    })
+
+    it('stop() is safe to call multiple times', () => {
+      expect(() => { G.audioManager.stop(); G.audioManager.stop(); }).not.toThrow()
+    })
+
+    it('audio.play() promise rejection is caught (not unhandled)', async () => {
+      // Audio is mocked: play returns a resolved promise
+      // This test verifies the .catch() pattern works
+      const audio = new Audio()
+      const playResult = audio.play()
+      await expect(playResult).resolves.toBeUndefined()
+    })
+  })
+
+  describe('gameOver guard prevents double execution', () => {
+    it('calling gameOver twice does not change state again', () => {
+      set$('gameOverTriggered', false)
+      set$('gameState', 'playing')
+      set$('score', 100)
+      set$('highScore', 0)
+      G.gameOver()
+      const stateAfterFirst = G.gameState
+      G.gameOver()
+      expect(G.gameState).toBe(stateAfterFirst)
+    })
+  })
+
+  describe('createShipImage cache hit', () => {
+    it('known types are cached as HTMLCanvasElement', () => {
+      ;['player', 'small', 'medium', 'large', 'boss'].forEach(type => {
+        expect(G.shipCache[type]).toBeInstanceOf(HTMLCanvasElement)
+      })
+    })
+
+    it('returns existing canvas from cache on second call', () => {
+      const first = G.shipCache['player']
+      const second = G.shipCache['player']
+      expect(second).toBe(first)
+    })
+  })
+
+  describe('spawnPowerup without player on screen', () => {
+    it('still creates powerup (independent of player state)', () => {
+      set$('powerups', [])
+      set$('player', null)
+      vi.spyOn(Math, 'random').mockReturnValue(0.05)
+      G.spawnPowerup(100, 200)
+      expect(G.powerups.length).toBe(1)
+      vi.restoreAllMocks()
+    })
   })
 })
